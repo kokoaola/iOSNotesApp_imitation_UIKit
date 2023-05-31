@@ -7,6 +7,19 @@
 
 import UIKit
 
+
+class Note: NSObject, Codable {
+    var memo: String
+    var date: Date
+    
+    init(memo: String, date: Date) {
+        self.memo = memo
+        self.date = date
+    }
+}
+
+
+
 class ViewController: TableViewController {
     
     
@@ -23,12 +36,12 @@ class ViewController: TableViewController {
         }()
     
     var items = ["タイトル", "日付"]
-    
+    var notes = [Note]()
     
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+        self.view.backgroundColor = UIColor.secondarySystemBackground
         title = "メモ"
         navigationController?.navigationBar.prefersLargeTitles = true
         ///上の配置
@@ -40,6 +53,34 @@ class ViewController: TableViewController {
         let spacer = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
         ///新規作成
         let refresh = UIBarButtonItem(image: UIImage(systemName: "square.and.pencil"), style: .plain, target: nil, action: #selector(aaa))
+    
+        
+        ///アプリの実行時にディスクから配列をロード
+        let defaults = UserDefaults.standard
+        
+        
+        let testItem = Note(memo: "UINavigationBar decoded as unlocked for UINavigationController, or navigationBar delegate set up incorrectly. Inconsistent configuration may cause problems. navigationController=<UINavigationController: 0x137813800>, navigationBar=<UINavigationBar: 0x136a094f0; frame = (0 59; 0 50); opaque = NO; autoresize = W; layer = <CALayer: 0x600002d997e0>> delegate=0x137813800", date: Date())
+        notes.append(testItem)
+        
+        
+        let jsonEncoder = JSONEncoder()
+        if let savedData = try? jsonEncoder.encode(notes) {
+            let defaults = UserDefaults.standard
+            defaults.set(savedData, forKey: "notes")
+        } else {
+            print("Failed to save people.")
+        }
+        
+        
+        if let items = defaults.object(forKey: "notes") as? Data {
+            let jsonDecoder = JSONDecoder()
+            do {
+                notes = try jsonDecoder.decode([Note].self, from: items)
+                print("________________")
+            } catch {
+                print("Failed to load people")
+            }
+        }
         
         ///合計メモ数
         let label = UILabel(frame: CGRect(x: 0, y: 0, width: 200, height: 20))
@@ -51,24 +92,13 @@ class ViewController: TableViewController {
         toolbarItems = [spacer, barButton, spacer, refresh]
         navigationController?.isToolbarHidden = false
         
-        ///アプリの実行時にディスクから配列をロード
-        let defaults = UserDefaults.standard
-        ///object(forKey:)メソッドでオプションのDataを取り出してアンラップし、それをJSONDecoderでPersonオブジェクトの配列に変換。
-        
-        if let items = defaults.object(forKey: "items") as? Data {
-            let jsonDecoder = JSONDecoder()
-            
-            do {
-                ///[Person].selfは「Personオブジェクトの配列を作成」という指示。
-                //allPhotos = try jsonDecoder.decode([Photos].self, from: savedPeople)
-            } catch {
-                print("Failed to load people")
-            }
-        }
     }
     
-    
-    
+    ///ナビゲーションバーをタップで非表示にする設定
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationController?.hidesBarsOnTap = false
+    }
     
     @objc func aaa(){
         print("aaa")
@@ -85,30 +115,17 @@ class ViewController: TableViewController {
     
     ///テーブルビューに必要な行数を指定
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-//        if section == 0 {
-//            return imgArray1.count
-//        }
-//        else if section == 1 {
-//            return imgArray2.count
-//        }
-//        else if section == 2 {
-//            return imgArray3.count
-//        }
-//        else{
-//            return 0
-//        }
-        return 5
+        return notes.count
     }
+
     
-    // Section数
-    override func numberOfSections(in tableView: UITableView) -> Int {
-        return 2
-    }
-    
-    // Sectioのタイトル
     override func tableView(_ tableView: UITableView,
                    titleForHeaderInSection section: Int) -> String? {
-        return nil
+        return "すべて"
+    }
+    
+    override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        return 50.0
     }
     
     
@@ -117,21 +134,30 @@ class ViewController: TableViewController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         ///withIdentifierは識別子文字列を使ってコードとストーリーボード情報を結びつけています。Interface Builderとコードで同じ名前使用しないと、クラッシュしてしまいます。
         let cell = tableView.dequeueReusableCell(withIdentifier: "memo", for: indexPath)
-        //cell.textLabel?.text = "aaa"
-        // Set different UIListContentConfiguration for odd/even cell
+
+        let note = notes[indexPath.row]
+        
+        
         var content = contents
+        content.text = String(note.memo.prefix(10))
         
-#if DEBUG
-        print(content)
-#endif
-        
-        content.text = items[0]
-        content.secondaryText = "2023/5/26"
-        //content.image = UIImage(systemName: "iphone")
-        
-        // Set content
+        let df =  DateFormatter()
+        df.calendar = Calendar(identifier: .japanese)
+        df.dateFormat = "YYYY年M月dd日"
+        content.secondaryText = df.string(from: note.date) + note.memo
         cell.contentConfiguration = content
         return cell
+    }
+    
+    
+    ///テーブルビューセルタップ時の動き
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        print("AAA")
+        if let vc = storyboard?.instantiateViewController(withIdentifier: "Detail") as? DetailViewController {
+            vc.text = notes[indexPath.row].memo
+            navigationController?.pushViewController(vc, animated: true)
+            
+        }
     }
 
 }
