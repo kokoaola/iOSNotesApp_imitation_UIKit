@@ -10,11 +10,6 @@
 
 import UIKit
 
-///２デリゲート用のプロトコル
-protocol DestinationViewControllerDelegate: AnyObject {
-    func changeProperty(newMemo: String, low: Int)
-}
-
 class DetailViewController: UIViewController {
     @IBOutlet weak var textView: UITextView!
     var text: String?
@@ -23,34 +18,40 @@ class DetailViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-//        navigationItem.leftBarButtonItem = UIBarButtonItem(title:"aa", style: .plain, target: self, action: #selector(done))
-        //navigationItem.hidesBackButton = true
-//        let backItem = UIBarButtonItem(title: "戻る", style: .plain, target: self, action: nil)
-//        backItem.tintColor = .blue
-//        navigationItem.backBarButtonItem = backItem
-//        navigationController?.navigationBar.backIndicatorImage = UIImage(systemName: "chevron.backward")
-//        navigationController?.navigationBar.backIndicatorTransitionMaskImage = UIImage(systemName: "chevron.backward")
-        //(image: UIImage(systemName: "る"), style: .plain, target: self, action: #selector(done))
+        ///上の配置
+        let backButton = UIBarButtonItem(title: "戻る", style: .plain, target: self, action: #selector(save))
+        self.navigationItem.leftBarButtonItem = backButton
+        ///右上（アイコン）
+        navigationItem.rightBarButtonItem = UIBarButtonItem(image: UIImage(systemName: "trash"), style: .plain, target: self, action: #selector(showAlert))
         
         if text?.count ?? 0 < 20{
             title = text
         }else{
             title = String((text?.prefix(20) ?? "")) + "..."
         }
-        
-//        title = String((text?.prefix(20) ?? "")) + "..."
         textView.text = text
     }
     
-    override func viewWillDisappear(_ animated: Bool) {
+    @objc func save(){
         ///ここでデリゲートメソッドを発動させる
-        delegate?.changeProperty(newMemo: textView.text, low: index ?? 0)
+        delegate?.changeProperty(newMemo: textView.text, low: index)
         self.navigationController?.popViewController(animated: true)
     }
     
-//    @objc func done(){
-//        delegate?.changeProperty(newMemo: "更新したい値", low: 1)
-//        self.navigationController?.popViewController(animated: true)
-//    }
+    @objc func showAlert(){
+        let alert = UIAlertController(title: "削除",
+                                      message: "メモを削除しますか？",
+                                      preferredStyle: UIAlertController.Style.alert)
+        alert.addAction(UIAlertAction(title: "戻る", style: .cancel, handler: nil))
+        alert.addAction(UIAlertAction(title: "削除する", style: .destructive, handler: {[weak self] _ in
+            ///ここでデリゲートメソッドを発動させる
+            print(self?.index, self?.text)
+            
+            self?.delegate?.deleteItem(low: self?.index)
+            self?.navigationController?.popViewController(animated: true)
+        }))
+        present(alert, animated: true, completion: nil)
+    }
+    
     
 }

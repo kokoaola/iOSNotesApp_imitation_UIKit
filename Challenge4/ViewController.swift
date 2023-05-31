@@ -7,7 +7,8 @@
 
 import UIKit
 
-
+///メモ用のカスタムデータタイプ
+///Data型に変換して保存するのでCodableに準拠
 class Note: NSObject, Codable {
     var memo: String
     var date: Date
@@ -19,38 +20,38 @@ class Note: NSObject, Codable {
 }
 
 
+///２デリゲート用のプロトコル
+protocol DestinationViewControllerDelegate: AnyObject {
+    func changeProperty(newMemo: String, low: Int?)
+    func deleteItem(low: Int?)
+}
+
 
 class ViewController: UITableViewController , DestinationViewControllerDelegate {
+    
     
     private var contents: UIListContentConfiguration =
         {
             var content: UIListContentConfiguration = .subtitleCell()
             content.textProperties.font = .systemFont(ofSize: 18, weight: .bold)
-            //content.textProperties.color = .systemBlue
             content.secondaryTextProperties.font = .systemFont(ofSize: 13, weight: .light)
-            //content.secondaryTextProperties.color = .systemTeal
-            //content.imageProperties.tintColor = .systemRed
-            
             return content
         }()
     
     var notes = [Note]()
-    
+    var noteCount:Int?
 
     override func viewDidLoad() {
         super.viewDidLoad()
         self.view.backgroundColor = UIColor.secondarySystemBackground
         title = "メモ"
         navigationController?.navigationBar.prefersLargeTitles = true
-        ///上の配置
-        ///右上（アイコン）
-        navigationItem.rightBarButtonItem = UIBarButtonItem(image: UIImage(systemName: "ellipsis.circle"), style: .plain, target: self, action: #selector(pushDetailView))
         
         ///下の配置
         ///スペース
         let spacer = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
         ///新規作成
-        let refresh = UIBarButtonItem(image: UIImage(systemName: "square.and.pencil"), style: .plain, target: self, action: #selector(newItem))
+        let refresh = UIBarButtonItem(image: UIImage(systemName: "square.and.pencil"), style: .plain, target: self, action: #selector(pushDetailView))
         toolbarItems = [spacer, refresh]
         
         ///アプリの実行時にNotes配列をロード
@@ -60,6 +61,7 @@ class ViewController: UITableViewController , DestinationViewControllerDelegate 
             do {
                 notes = try jsonDecoder.decode([Note].self, from: items)
             } catch {
+                notes = []
                 print("Failed to load people")
             }
         }
@@ -76,18 +78,52 @@ class ViewController: UITableViewController , DestinationViewControllerDelegate 
         navigationController?.hidesBarsOnTap = false
     }
     
-//    ///ナビゲーションバーをタップで非表示にする設定
-//    override func viewWillAppear(_ animated: Bool) {
-//        super.viewWillAppear(animated)
-//        navigationController?.hidesBarsOnTap = false
-//    }
-//
     
-    ///Noteの新規作成
-    @objc func newItem(){
-        let testItem = Note(memo: "UINavigationBar decoded as unlocked for UINavigationController, or navigationBar delegate set up incorrectly. Inconsistent configuration may cause problems. navigationController=<UINavigationController: 0x137813800>, navigationBar=<UINavigationBar: 0x136a094f0; frame = (0 59; 0 50); opaque = NO; autoresize = W; layer = <CALayer: 0x600002d997e0>> delegate=0x137813800", date: Date())
-        notes.append(testItem)
+//    ///Noteの新規作成
+//    @objc func newItem(){
+//        let testItem = Note(memo: "UINavigationBar decoded as unlocked for UINavigationController, or navigationBar delegate set up incorrectly. Inconsistent configuration may cause problems. navigationController=<UINavigationController: 0x137813800>, navigationBar=<UINavigationBar: 0x136a094f0; frame = (0 59; 0 50); opaque = NO; autoresize = W; layer = <CALayer: 0x600002d997e0>> delegate=0x137813800", date: Date())
+//        notes.append(testItem)
+//
+//        let jsonEncoder = JSONEncoder()
+//        if let savedData = try? jsonEncoder.encode(notes) {
+//            let defaults = UserDefaults.standard
+//            defaults.set(savedData, forKey: "notes")
+//        } else {
+//            print("Failed to save people.")
+//        }
+//
+//        self.loadView()
+//    }
+    
+    
+    @objc func pushDetailView(){
+        if let vc = storyboard?.instantiateViewController(withIdentifier: "Detail") as? DetailViewController {
+            vc.delegate = self
+            navigationController?.pushViewController(vc, animated: true)
+        }
+    }
+    
+
+    
+    func changeProperty(newMemo: String, low: Int?) {
+        if newMemo == "" && low == nil{
+            return
+        }
         
+        ///lowがnilだったとき（新規だった時）のは配列に追加して終了
+        guard let low = low else{
+            notes.append(Note(memo: newMemo, date: Date()))
+            let jsonEncoder = JSONEncoder()
+            if let savedData = try? jsonEncoder.encode(notes) {
+                let defaults = UserDefaults.standard
+                defaults.set(savedData, forKey: "notes")
+            } else {
+                print("Failed to save people.")
+            }
+            self.loadView()
+            return
+        }
+        notes[low] = Note(memo: newMemo, date: Date())
         let jsonEncoder = JSONEncoder()
         if let savedData = try? jsonEncoder.encode(notes) {
             let defaults = UserDefaults.standard
@@ -95,21 +131,22 @@ class ViewController: UITableViewController , DestinationViewControllerDelegate 
         } else {
             print("Failed to save people.")
         }
-        
         self.loadView()
     }
     
     
-    @objc func pushDetailView(){
-        if let vc = storyboard?.instantiateViewController(withIdentifier: "Detail") as? DetailViewController {
-            navigationController?.pushViewController(vc, animated: true)
+    func deleteItem(low: Int?) {
+        guard let low = low else{
+            return
         }
-    }
-    
-
-    
-    func changeProperty(newMemo: String, low: Int) {
-        notes[low] = Note(memo: newMemo, date: Date())
+        let newNotes = notes.remove(at: low)
+        let jsonEncoder = JSONEncoder()
+        if let savedData = try? jsonEncoder.encode(newNotes) {
+            let defaults = UserDefaults.standard
+            defaults.set(savedData, forKey: "notes")
+        } else {
+            print("Failed to save people.")
+        }
         self.loadView()
     }
     
