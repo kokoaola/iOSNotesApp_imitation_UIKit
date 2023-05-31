@@ -20,7 +20,7 @@ class Note: NSObject, Codable {
 
 
 
-class ViewController: TableViewController {
+class ViewController: UITableViewController {
     
     
     private var contents: UIListContentConfiguration =
