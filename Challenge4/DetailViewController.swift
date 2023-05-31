@@ -10,15 +10,47 @@
 
 import UIKit
 
+///２デリゲート用のプロトコル
+protocol DestinationViewControllerDelegate: AnyObject {
+    func changeProperty(newMemo: String, low: Int)
+}
+
 class DetailViewController: UIViewController {
     @IBOutlet weak var textView: UITextView!
     var text: String?
+    var index: Int?
+    weak var delegate: DestinationViewControllerDelegate?
     
     override func viewDidLoad() {
         super.viewDidLoad()
+//        navigationItem.leftBarButtonItem = UIBarButtonItem(title:"aa", style: .plain, target: self, action: #selector(done))
+        //navigationItem.hidesBackButton = true
+//        let backItem = UIBarButtonItem(title: "戻る", style: .plain, target: self, action: nil)
+//        backItem.tintColor = .blue
+//        navigationItem.backBarButtonItem = backItem
+//        navigationController?.navigationBar.backIndicatorImage = UIImage(systemName: "chevron.backward")
+//        navigationController?.navigationBar.backIndicatorTransitionMaskImage = UIImage(systemName: "chevron.backward")
+        //(image: UIImage(systemName: "る"), style: .plain, target: self, action: #selector(done))
         
-        title = "Pictures"
+        if text?.count ?? 0 < 20{
+            title = text
+        }else{
+            title = String((text?.prefix(20) ?? "")) + "..."
+        }
+        
+//        title = String((text?.prefix(20) ?? "")) + "..."
         textView.text = text
-
     }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        ///ここでデリゲートメソッドを発動させる
+        delegate?.changeProperty(newMemo: textView.text, low: index ?? 0)
+        self.navigationController?.popViewController(animated: true)
+    }
+    
+//    @objc func done(){
+//        delegate?.changeProperty(newMemo: "更新したい値", low: 1)
+//        self.navigationController?.popViewController(animated: true)
+//    }
+    
 }

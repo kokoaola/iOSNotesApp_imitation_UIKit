@@ -20,8 +20,7 @@ class Note: NSObject, Codable {
 
 
 
-class ViewController: UITableViewController {
-    
+class ViewController: UITableViewController , DestinationViewControllerDelegate {
     
     private var contents: UIListContentConfiguration =
         {
@@ -35,7 +34,6 @@ class ViewController: UITableViewController {
             return content
         }()
     
-    var items = ["タイトル", "日付"]
     var notes = [Note]()
     
 
@@ -52,16 +50,43 @@ class ViewController: UITableViewController {
         ///スペース
         let spacer = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
         ///新規作成
-        let refresh = UIBarButtonItem(image: UIImage(systemName: "square.and.pencil"), style: .plain, target: nil, action: #selector(aaa))
-    
+        let refresh = UIBarButtonItem(image: UIImage(systemName: "square.and.pencil"), style: .plain, target: self, action: #selector(newItem))
+        toolbarItems = [spacer, refresh]
         
-        ///アプリの実行時にディスクから配列をロード
+        ///アプリの実行時にNotes配列をロード
         let defaults = UserDefaults.standard
+        if let items = defaults.object(forKey: "notes") as? Data {
+            let jsonDecoder = JSONDecoder()
+            do {
+                notes = try jsonDecoder.decode([Note].self, from: items)
+            } catch {
+                print("Failed to load people")
+            }
+        }
         
         
+        ///合計メモ数を下に表示
+        let label = UILabel(frame: CGRect(x: 0, y: 0, width: 200, height: 20))
+        label.text = "\(notes.count)件のメモ"
+        label.textAlignment = .center
+        label.font = label.font.withSize(10)
+        let barButton = UIBarButtonItem(customView: label)
+        toolbarItems = [spacer, barButton, spacer, refresh]
+        navigationController?.isToolbarHidden = false
+        navigationController?.hidesBarsOnTap = false
+    }
+    
+//    ///ナビゲーションバーをタップで非表示にする設定
+//    override func viewWillAppear(_ animated: Bool) {
+//        super.viewWillAppear(animated)
+//        navigationController?.hidesBarsOnTap = false
+//    }
+//
+    
+    ///Noteの新規作成
+    @objc func newItem(){
         let testItem = Note(memo: "UINavigationBar decoded as unlocked for UINavigationController, or navigationBar delegate set up incorrectly. Inconsistent configuration may cause problems. navigationController=<UINavigationController: 0x137813800>, navigationBar=<UINavigationBar: 0x136a094f0; frame = (0 59; 0 50); opaque = NO; autoresize = W; layer = <CALayer: 0x600002d997e0>> delegate=0x137813800", date: Date())
         notes.append(testItem)
-        
         
         let jsonEncoder = JSONEncoder()
         if let savedData = try? jsonEncoder.encode(notes) {
@@ -71,37 +96,7 @@ class ViewController: UITableViewController {
             print("Failed to save people.")
         }
         
-        
-        if let items = defaults.object(forKey: "notes") as? Data {
-            let jsonDecoder = JSONDecoder()
-            do {
-                notes = try jsonDecoder.decode([Note].self, from: items)
-                print("________________")
-            } catch {
-                print("Failed to load people")
-            }
-        }
-        
-        ///合計メモ数
-        let label = UILabel(frame: CGRect(x: 0, y: 0, width: 200, height: 20))
-        label.text = "\(items.count)件のメモ"
-        label.textAlignment = .center
-        label.font = label.font.withSize(10)
-        let barButton = UIBarButtonItem(customView: label)
-        
-        toolbarItems = [spacer, barButton, spacer, refresh]
-        navigationController?.isToolbarHidden = false
-        
-    }
-    
-    ///ナビゲーションバーをタップで非表示にする設定
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        navigationController?.hidesBarsOnTap = false
-    }
-    
-    @objc func aaa(){
-        print("aaa")
+        self.loadView()
     }
     
     
@@ -109,25 +104,30 @@ class ViewController: UITableViewController {
         if let vc = storyboard?.instantiateViewController(withIdentifier: "Detail") as? DetailViewController {
             navigationController?.pushViewController(vc, animated: true)
         }
-        
     }
+    
 
+    
+    func changeProperty(newMemo: String, low: Int) {
+        notes[low] = Note(memo: newMemo, date: Date())
+        self.loadView()
+    }
     
     ///テーブルビューに必要な行数を指定
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return notes.count
     }
 
-    
+    ///セクション名
     override func tableView(_ tableView: UITableView,
                    titleForHeaderInSection section: Int) -> String? {
         return "すべて"
     }
     
+    ///メモを一部だけ表示させるために高さを指定
     override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return 50.0
+        return 60.0
     }
-    
     
     
     ///テーブルビューの内容を指定
@@ -139,7 +139,11 @@ class ViewController: UITableViewController {
         
         
         var content = contents
-        content.text = String(note.memo.prefix(10))
+        if note.memo.count < 20{
+            content.text = note.memo
+        }else{
+            content.text = String(note.memo.prefix(20)) + "..."
+        }
         
         let df =  DateFormatter()
         df.calendar = Calendar(identifier: .japanese)
@@ -155,6 +159,8 @@ class ViewController: UITableViewController {
         print("AAA")
         if let vc = storyboard?.instantiateViewController(withIdentifier: "Detail") as? DetailViewController {
             vc.text = notes[indexPath.row].memo
+            vc.delegate = self
+            vc.index = indexPath.row
             navigationController?.pushViewController(vc, animated: true)
             
         }
