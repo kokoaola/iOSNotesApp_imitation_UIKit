@@ -43,7 +43,13 @@ class ViewController: UITableViewController , DestinationViewControllerDelegate 
     let jsonDecoder = JSONDecoder()
     
     override func viewDidLoad() {
+        
         super.viewDidLoad()
+        
+        /// ナビゲーションバーのtint colorを変更する
+        self.navigationController?.navigationBar.tintColor = UIColor.orange
+        self.navigationController?.toolbar.tintColor = UIColor.orange
+        
         ///テーブルビューの背景色指定
         self.view.backgroundColor = UIColor.secondarySystemBackground
         ///ナビゲーションタイトル
