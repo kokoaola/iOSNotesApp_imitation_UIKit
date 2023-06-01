@@ -20,45 +20,48 @@ class Note: NSObject, Codable {
 }
 
 
-///２デリゲート用のプロトコル
+///デリゲート用のプロトコル
 protocol DestinationViewControllerDelegate: AnyObject {
-    func changeProperty(newMemo: String, low: Int?)
-    func deleteItem(low: Int?)
+    ///保存用のメソッド
+    func saveMemo(newMemo: String, index: Int?)
+    ///削除用のメソッド
+    func deleteItem(index: Int?)
 }
+
 
 
 class ViewController: UITableViewController , DestinationViewControllerDelegate {
     
-    
-    private var contents: UIListContentConfiguration =
-        {
-            var content: UIListContentConfiguration = .subtitleCell()
-            content.textProperties.font = .systemFont(ofSize: 18, weight: .bold)
-            content.secondaryTextProperties.font = .systemFont(ofSize: 13, weight: .light)
-            return content
-        }()
-    
     var notes = [Note]()
     var noteCount:Int?
-
+    
+    ///UserDefaultsクラスのインスタンスを作成
+    let defaults = UserDefaults.standard
+    ///JSONEncoderクラスのインスタンスを作成
+    let jsonEncoder = JSONEncoder()
+    ///JSONDecoderクラスのインスタンスを作成
+    let jsonDecoder = JSONDecoder()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
+        ///テーブルビューの背景色指定
         self.view.backgroundColor = UIColor.secondarySystemBackground
+        ///ナビゲーションタイトル
         title = "メモ"
+        ///ナビゲーションタイトル大きく表示
         navigationController?.navigationBar.prefersLargeTitles = true
         
-        ///下の配置
+        ///コントロールバーの配置
         ///スペース
         let spacer = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
-        ///新規作成
+        ///新規作成ボタン
         let refresh = UIBarButtonItem(image: UIImage(systemName: "square.and.pencil"), style: .plain, target: self, action: #selector(pushDetailView))
         toolbarItems = [spacer, refresh]
         
-        ///アプリの実行時にNotes配列をロード
-        let defaults = UserDefaults.standard
+        ///アプリの起動時にNotes配列をロード
         if let items = defaults.object(forKey: "notes") as? Data {
-            let jsonDecoder = JSONDecoder()
             do {
+                print("loaded")
                 notes = try jsonDecoder.decode([Note].self, from: items)
             } catch {
                 notes = []
@@ -79,23 +82,8 @@ class ViewController: UITableViewController , DestinationViewControllerDelegate 
     }
     
     
-//    ///Noteの新規作成
-//    @objc func newItem(){
-//        let testItem = Note(memo: "UINavigationBar decoded as unlocked for UINavigationController, or navigationBar delegate set up incorrectly. Inconsistent configuration may cause problems. navigationController=<UINavigationController: 0x137813800>, navigationBar=<UINavigationBar: 0x136a094f0; frame = (0 59; 0 50); opaque = NO; autoresize = W; layer = <CALayer: 0x600002d997e0>> delegate=0x137813800", date: Date())
-//        notes.append(testItem)
-//
-//        let jsonEncoder = JSONEncoder()
-//        if let savedData = try? jsonEncoder.encode(notes) {
-//            let defaults = UserDefaults.standard
-//            defaults.set(savedData, forKey: "notes")
-//        } else {
-//            print("Failed to save people.")
-//        }
-//
-//        self.loadView()
-//    }
     
-    
+    ///テーブルビューのセルタップ時と新規作成時ボタン押下、DetailViewに画面推移
     @objc func pushDetailView(){
         if let vc = storyboard?.instantiateViewController(withIdentifier: "Detail") as? DetailViewController {
             vc.delegate = self
@@ -103,105 +91,124 @@ class ViewController: UITableViewController , DestinationViewControllerDelegate 
         }
     }
     
-
     
-    func changeProperty(newMemo: String, low: Int?) {
-        if newMemo == "" && low == nil{
+    
+    ///編集、新規作成したメモを保存するデリゲートメソッド
+    func saveMemo(newMemo: String, index: Int?) {
+        ///メモを新規作成時、内容が何も入っていなかったら保存せず終了
+        if newMemo == "" && index == nil{
             return
         }
         
-        ///lowがnilだったとき（新規だった時）のは配列に追加して終了
-        guard let low = low else{
-            notes.append(Note(memo: newMemo, date: Date()))
-            let jsonEncoder = JSONEncoder()
-            if let savedData = try? jsonEncoder.encode(notes) {
-                let defaults = UserDefaults.standard
-                defaults.set(savedData, forKey: "notes")
-            } else {
-                print("Failed to save people.")
-            }
-            self.loadView()
-            return
+        ///Noteインスタンスを生成
+        let newNote = Note(memo: newMemo, date: Date())
+        
+        if let index = index{
+            ///既存のメモ編集の場合は既存のインスタンスを置き換える
+            notes[index] = newNote
+        }else{
+            ///新規作成時は配列の最後尾に追加する
+            notes.append(newNote)
         }
-        notes[low] = Note(memo: newMemo, date: Date())
-        let jsonEncoder = JSONEncoder()
+        
+        ///ユーザーデフォルトに保存
         if let savedData = try? jsonEncoder.encode(notes) {
-            let defaults = UserDefaults.standard
             defaults.set(savedData, forKey: "notes")
         } else {
-            print("Failed to save people.")
+            print("Failed to save people.2")
         }
         self.loadView()
     }
     
     
-    func deleteItem(low: Int?) {
-        guard let low = low else{
+    
+    ///アイテムを削除するデリゲートメソッド
+    func deleteItem(index: Int?) {
+        guard let index = index else{
             return
         }
-        let newNotes = notes.remove(at: low)
-        let jsonEncoder = JSONEncoder()
+        ///指定されたアイテムを削除
+        let newNotes = notes.remove(at: index)
+        ///新しい配列を保存する
         if let savedData = try? jsonEncoder.encode(newNotes) {
             let defaults = UserDefaults.standard
             defaults.set(savedData, forKey: "notes")
+            print("saved")
         } else {
             print("Failed to save people.")
         }
         self.loadView()
     }
+    
+    
     
     ///テーブルビューに必要な行数を指定
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return notes.count
     }
-
+    
+    
+    
     ///セクション名
     override func tableView(_ tableView: UITableView,
-                   titleForHeaderInSection section: Int) -> String? {
+                            titleForHeaderInSection section: Int) -> String? {
         return "すべて"
     }
     
-    ///メモを一部だけ表示させるために高さを指定
+    
+    
+    ///メモを一部だけ表示させるために、テーブルの高さを指定
     override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         return 60.0
     }
     
     
+    
     ///テーブルビューの内容を指定
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        ///withIdentifierは識別子文字列を使ってコードとストーリーボード情報を結びつけています。Interface Builderとコードで同じ名前使用しないと、クラッシュしてしまいます。
+        ///テーブルビュー再利用の設定
         let cell = tableView.dequeueReusableCell(withIdentifier: "memo", for: indexPath)
-
+        
+        ///表示するインスタンス
         let note = notes[indexPath.row]
-        
-        
+        ///セルのカスタマイズ用UIListContentConfigurationオブジェクトを作成
+        var contents: UIListContentConfiguration =
+        {
+            var content: UIListContentConfiguration = .subtitleCell()
+            content.textProperties.font = .systemFont(ofSize: 18, weight: .bold)
+            content.secondaryTextProperties.font = .systemFont(ofSize: 13, weight: .light)
+            return content
+        }()
         var content = contents
+        
+        ///メモが長文の時はタイトルの後半を...で省略
         if note.memo.count < 20{
             content.text = note.memo
         }else{
             content.text = String(note.memo.prefix(20)) + "..."
         }
         
+        ///日付の表示スタイルの指定
         let df =  DateFormatter()
         df.calendar = Calendar(identifier: .japanese)
         df.dateFormat = "YYYY年M月dd日"
         content.secondaryText = df.string(from: note.date) + note.memo
+        ///カスタムの適用
         cell.contentConfiguration = content
         return cell
     }
     
     
+    
     ///テーブルビューセルタップ時の動き
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        print("AAA")
+        ///DetailViewに画面推移
         if let vc = storyboard?.instantiateViewController(withIdentifier: "Detail") as? DetailViewController {
             vc.text = notes[indexPath.row].memo
             vc.delegate = self
             vc.index = indexPath.row
             navigationController?.pushViewController(vc, animated: true)
-            
         }
     }
-
 }
 
