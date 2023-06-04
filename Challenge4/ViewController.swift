@@ -33,7 +33,9 @@ protocol DestinationViewControllerDelegate: AnyObject {
 class ViewController: UITableViewController , DestinationViewControllerDelegate {
     
     var notes = [Note]()
-    var noteCount:Int?
+    var noteCount = 0
+    ///合計メモ数を下に表示
+    let label = UILabel(frame: CGRect(x: 0, y: 0, width: 200, height: 20))
     
     ///UserDefaultsクラスのインスタンスを作成
     let defaults = UserDefaults.standard
@@ -75,9 +77,8 @@ class ViewController: UITableViewController , DestinationViewControllerDelegate 
             }
         }
         
-        
-        ///合計メモ数を下に表示
-        let label = UILabel(frame: CGRect(x: 0, y: 0, width: 200, height: 20))
+//        ///合計メモ数を下に表示
+//        let label = UILabel(frame: CGRect(x: 0, y: 0, width: 200, height: 20))
         label.text = "\(notes.count)件のメモ"
         label.textAlignment = .center
         label.font = label.font.withSize(10)
@@ -123,6 +124,8 @@ class ViewController: UITableViewController , DestinationViewControllerDelegate 
         } else {
             print("Failed to save people.2")
         }
+        label.text = "\(notes.count)件のメモ"
+        print(noteCount)
         self.loadView()
     }
     
@@ -143,6 +146,7 @@ class ViewController: UITableViewController , DestinationViewControllerDelegate 
         } else {
             print("Failed to save people.")
         }
+        label.text = "\(notes.count)件のメモ"
         self.loadView()
     }
     
@@ -178,7 +182,7 @@ class ViewController: UITableViewController , DestinationViewControllerDelegate 
         ///表示するインスタンス
         let note = notes[indexPath.row]
         ///セルのカスタマイズ用UIListContentConfigurationオブジェクトを作成
-        var contents: UIListContentConfiguration =
+        let contents: UIListContentConfiguration =
         {
             var content: UIListContentConfiguration = .subtitleCell()
             content.textProperties.font = .systemFont(ofSize: 18, weight: .bold)
