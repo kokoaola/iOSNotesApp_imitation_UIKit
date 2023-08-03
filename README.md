@@ -4,7 +4,6 @@
 - Language：Swift
 - Version：5.7.2
 - Xcode：14.2
-- Architecture：MVVM
 
 ## 概要と使い方
 

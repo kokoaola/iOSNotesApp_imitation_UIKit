@@ -1,4 +1,3 @@
-
 #プロジェクトのカスタムschemeが保存されるディレクトリ
 xcuserdata/
 
@@ -9,6 +8,7 @@ xcuserdata/
 
 #ビルドファイル。
 build/
+DerivedData/
 
 
 #プロジェクトごとに生成するキャッシュデータ、インデックス、ログなどが入っているデータ。
@@ -36,12 +36,20 @@ perspectivev3-file
 *.dSYM.zip
 *.dSYM
 
-
 #XcodeのプロジェクトのBuild Scheme、構成などが入っているデータ。
-*.xcodeproj/*
+
 *.xcodeproj/project.pbxproj
 *.xcodeproj/xcshareddata/
 !*.xcworkspace/contents.xcworkspacedata
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
 
 
 #CocoaPodsでインストールしたライブラリのデータ。
@@ -51,3 +59,9 @@ Pods/*
 #Carthageでインストールしたライブラリのデータ。
 Carthage/Build/
 
+*.xcodeproj/project.xcworkspace/xcuserdata/*
+*.xcodeproj/xcuserdata/*
+*.moved-aside
+*.xcuserstate
+*.xccheckout
+*.xcscmblueprint
